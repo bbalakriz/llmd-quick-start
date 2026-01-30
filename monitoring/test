@@ -1,0 +1,200 @@
+
+# Create the benchmark job
+cat << EOF | oc apply -f-
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: custom-benchmark-llm-d
+spec:
+  backoffLimit: 4
+  template:
+    spec:
+      serviceAccountName: default
+      restartPolicy: Never
+      containers:
+        - name: benchmark
+          image: quay.io/hayesphilip/multi-turn-benchmark:0.0.1
+          args:
+            - http://openshift-ai-inference-openshift-default.openshift-ingress.svc.cluster.local/llm-d-project/llama-3-1-8b-instruct-fp8/v1
+            - --parallel=9
+EOF
+---
+  (APIServer pid=57) DEBUG 01-27 01:23:55 [v1/engine/async_llm.py:655] Called check_health.
+(APIServer pid=57) DEBUG 01-27 01:23:55 [v1/engine/async_llm.py:655] Called check_health.
+(APIServer pid=57) DEBUG 01-27 01:23:57 [v1/metrics/loggers.py:236] Engine 000: Avg prompt throughput: 0.0 tokens/s, Avg generation throughput: 0.0 tokens/s, Running: 0 reqs, Waiting: 0 reqs, GPU KV cache usage: 0.0%, Prefix cache hit rate: 0.0%
+bbalasub$               
+bbalasub$ 
+bbalasub$ kubectl logs -n llmd-test gpt-oss-20b-pfd-kserve-67d69bd748-lf99s | grep -i "listening"
+Defaulted container "main" out of: main, modelcar, llm-d-routing-sidecar (init), modelcar-init (init)
+(EngineCore_DP0 pid=89) DEBUG 01-27 00:16:25 [distributed/.../v1/nixl_connector.py:445] Starting listening on path: tcp://10.131.0.18:5600
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl logs -n llmd-test gpt-oss-20b-pfd-kserve-67d69bd748-lf99s | grep "Uvicorn"
+
+Defaulted container "main" out of: main, modelcar, llm-d-routing-sidecar (init), modelcar-init (init)
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ curl -X POST http://localhost:8000/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-oss-20b",
+    "prompt": "Hello",
+    "max_tokens": 10
+  }'
+curl: (52) Empty reply from server
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ curl -k -X POST https://localhost:8443/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-oss-20b",
+    "prompt": "Hello",
+    "max_tokens": 10
+  }'
+
+{"id":"cmpl-e5b1f12fc5134865a50b4d41969fa6d8","object":"text_completion","created":1769477941,"model":"openai/gpt-oss-20b","choices":[{"index":0,"text":"\");\n        });\n\n        UriWord po = new Uri","logprobs":null,"finish_reason":"length","stop_reason":null,"token_ids":null,"prompt_logprobs":null,"prompt_token_ids":null}],"service_tier":null,"system_fingerprint":null,"usage":{"prompt_tokens":1,"total_tokens":11,"completion_tokens":10,"prompt_tokens_details":null},"kv_transfer_params":null}%                                   
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ curl -k -X POST https://localhost:8443/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-oss-20b",
+    "prompt": "The capital of France is",
+    "max_tokens": 50
+  }'
+
+{"id":"cmpl-dcab9ee8a0f64d9982c09b1f03d2728f","object":"text_completion","created":1769478012,"model":"openai/gpt-oss-20b","choices":[{"index":0,"text":" {CITY}.\" },\n              { \"key\": \"key4\", \"type\": \"question\", \"value\": \"What is the capital of Spain?\" }]\n    # Write JSON data to a temporary file\n    temp_filename = 'temp_input.json","logprobs":null,"finish_reason":"length","stop_reason":null,"token_ids":null,"prompt_logprobs":null,"prompt_token_ids":null}],"service_tier":null,"system_fingerprint":null,"usage":{"prompt_tokens":5,"total_tokens":55,"completion_tokens":50,"prompt_tokens_details":null},"kv_transfer_params":null}%                
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ curl -k -X POST https://localhost:8443/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-oss-20b",
+    "messages": [{"role": "user", "content": "What is the capital of France?"}],
+    "max_tokens": 50
+  }'
+
+{"id":"chatcmpl-0dc5f439597940bfab48fbef9f0bfba0","object":"chat.completion","created":1769478067,"model":"openai/gpt-oss-20b","choices":[{"index":0,"message":{"role":"assistant","content":null,"refusal":null,"annotations":null,"audio":null,"function_call":null,"tool_calls":[],"reasoning":"The user asks a straightforward question: \"What is the capital of France?\" I need to answer: \"Paris.\" According to the policy, this is a simple factual question, no policy conflicts. Provide short response. Also could add a","reasoning_content":"The user asks a straightforward question: \"What is the capital of France?\" I need to answer: \"Paris.\" According to the policy, this is a simple factual question, no policy conflicts. Provide short response. Also could add a"},"logprobs":null,"finish_reason":"length","stop_reason":null,"token_ids":null}],"service_tier":null,"system_fingerprint":null,"usage":{"prompt_tokens":76,"total_tokens":126,"completion_tokens":50,"prompt_tokens_details":null},"prompt_logprobs":null,"prompt_token_ids":null,"kv_transfer_params":null}%  
+bbalasub$ 
+bbalasub$ 
+bbalasub$ curl -k -X POST https://localhost:8443/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-oss-20b",
+    "messages": [{"role": "user", "content": "What is the capital of France?"}],
+    "max_tokens": 512
+  }'
+
+{"id":"chatcmpl-499ebd7f0f614427b331a23caac344c9","object":"chat.completion","created":1769478120,"model":"openai/gpt-oss-20b","choices":[{"index":0,"message":{"role":"assistant","content":"The capital of France is **Paris**.","refusal":null,"annotations":null,"audio":null,"function_call":null,"tool_calls":[],"reasoning":"This is a straightforward question: capital of France is Paris. The user asked \"What is the capital of France?\" So answer: Paris.","reasoning_content":"This is a straightforward question: capital of France is Paris. The user asked \"What is the capital of France?\" So answer: Paris."},"logprobs":null,"finish_reason":"stop","stop_reason":null,"token_ids":null}],"service_tier":null,"system_fingerprint":null,"usage":{"prompt_tokens":76,"total_tokens":123,"completion_tokens":47,"prompt_tokens_details":null},"prompt_logprobs":null,"prompt_token_ids":null,"kv_transfer_params":null}%                             
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+ *  History restored 
+
+bbalasub$ 
+ *  History restored 
+
+bbalasub$ 
+---
+curl: (7) Failed to connect to localhost port 8000 after 0 ms: Couldn't connect to server
+curl: (3) URL rejected: Malformed input to a URL function
+zsh: command not found: -H
+zsh: command not found: -d
+bbalasub$ Forwarding from 127.0.0.1:8000 -> 8001
+Forwarding from [::1]:8000 -> 8001
+
+bbalasub$ 
+bbalasub$ kill %1
+
+[1]  + terminated  oc port-forward -n llmd-test  8000:8001                                                                             
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl port-forward -n llmd-test gpt-oss-20b-pfd-kserve-router-scheduler-57f5d6d9bf-t57m7 8000:8001 &  
+
+# Test direct vLLM access
+curl -X POST http://localhost:8000/v1/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-oss-20b",
+    "prompt": "Hello",
+    "max_tokens": 10
+  }'
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl port-forward -n llmd-test gpt-oss-20b-pfd-kserve-router-scheduler-57f5d6d9bf-hl4mb 8000:8001
+Forwarding from 127.0.0.1:8000 -> 8001
+Forwarding from [::1]:8000 -> 8001
+Handling connection for 8000
+E0126 17:15:54.506536   58782 portforward.go:413] "Unhandled Error" err="an error occurred forwarding 8000 -> 8001: error forwarding port 8001 to pod e8cddd21d2af2db48cc9d442824b4b85c97dd860b818c6fe1e1da2d6680fea49, uid : port forward into network namespace \"/var/run/netns/8e97846f-3f90-463d-8cc9-a9b1dcf89183\": failed to connect to localhost:8001 inside namespace e8cddd21d2af2db48cc9d442824b4b85c97dd860b818c6fe1e1da2d6680fea49: dial tcp [::1]:8001: connect: connection refused"
+error: lost connection to pod
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl get pod -n llmd-test gpt-oss-20b-pfd-kserve-router-scheduler-57f5d6d9bf-t57m7 -o jsonpath='{.spec.containers[*].ports}'
+
+[{"containerPort":9002,"name":"grpc","protocol":"TCP"},{"containerPort":9003,"name":"grpc-health","protocol":"TCP"},{"containerPort":9090,"name":"metrics","protocol":"TCP"}]%                                                                                              
+bbalasub$ 
+bbalasub$ 
+bbalasub$ oc get po -n llmd-test
+NAME                                                       READY   STATUS    RESTARTS   AGE
+gpt-oss-20b-pfd-kserve-67d69bd748-lf99s                    3/3     Running   0          65m
+gpt-oss-20b-pfd-kserve-prefill-66479dc86-gx7rs             2/2     Running   0          65m
+gpt-oss-20b-pfd-kserve-router-scheduler-57f5d6d9bf-t57m7   1/1     Running   0          65m
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl get pod -n llmd-test gpt-oss-20b-pfd-kserve-67d69bd748-lf99s -  jsonpath='{.spec.containers[*].ports}'---------------
+[{"containerPort":8001,"protocol":"TCP"}]%                                                                                            
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl port-forward -n llmd-test kubectl get pod -n llmd-test gpt-oss-20b-pfd-kserve-67d69bd748-lf99s -o jsonpath='{.spec.containers[*].ports}' 
+[{"containerPort":8001,"protocol":"TCP"}]%   8000:8001
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl port-forward -n llmd-test  gpt-oss-20b-pfd-kserve-67d69bd748-lf99s 8000:8001
+Forwarding from 127.0.0.1:8000 -> 8001
+Forwarding from [::1]:8000 -> 8001
+Handling connection for 8000
+^C%                                                                                                                                   
+bbalasub$ kill %1
+kill: %1: no such job
+bbalasub$ 
+bbalasub$ ps -ef| grep forward
+    0   696   695   0 Sun10AM ??         0:00.00 [splunkd pid=695] splunkd -p 8089 start XPC_SERVICE_NAME=com.splunk PATH=/opt/splunkforwarder/bin:/usr/bin:/bin:/usr/sbin:/sbin XPC_FLAGS=0x0
+  501 61477 31145   0  5:23PM ttys007    0:00.00 grep forward
+bbalasub$ 
+bbalasub$ kubectl port-forward -n llmd-test gpt-oss-20b-pfd-kserve-67d69bd748-lf99s 8000:8080
+
+Forwarding from 127.0.0.1:8000 -> 8080
+Forwarding from [::1]:8000 -> 8080
+error: lost connection to pod
+bbalasub$ kubectl port-forward -n llmd-test gpt-oss-20b-pfd-kserve-67d69bd748-lf99s 8000:8080
+
+Forwarding from 127.0.0.1:8000 -> 8080
+Forwarding from [::1]:8000 -> 8080
+Handling connection for 8000
+E0126 17:36:23.008532   62672 portforward.go:413] "Unhandled Error" err="an error occurred forwarding 8000 -> 8080: error forwarding port 8080 to pod a356fbb3ea4477095e046ed7e349adcaee1da853aedfa157c7279a17a4c663a1, uid : port forward into network namespace \"/var/run/netns/19c77301-6528-4873-a5a3-b48f434d451f\": failed to connect to localhost:8080 inside namespace a356fbb3ea4477095e046ed7e349adcaee1da853aedfa157c7279a17a4c663a1: dial tcp [::1]:8080: connect: connection refused"
+error: lost connection to pod
+bbalasub$ 
+bbalasub$ 
+bbalasub$ 
+bbalasub$ kubectl port-forward -n llmd-test gpt-oss-20b-pfd-kserve-router-scheduler-57f5d6d9bf-hl4mb  8443:8001
+
+Forwarding from 127.0.0.1:8443 -> 8001
+Forwarding from [::1]:8443 -> 8001
+Handling connection for 8443
+Handling connection for 8443
+Handling connection for 8443
+Handling connection for 8443
+error: lost connection to pod
+bbalasub$ 
+ *  History restored 
+
+bbalasub$ 
